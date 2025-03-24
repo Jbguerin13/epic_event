@@ -1,7 +1,37 @@
 from sqlalchemy import Column, Integer, String, ForeignKey, Date, Boolean
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
+from argon2 import PasswordHasher
+from argon2.exceptions import VerifyMismatchError
 
 Base = declarative_base()
+
+class UserRoles(Base):
+    __tablename__ = "user_roles"
+    id = Column(Integer, primary_key=True)
+    role = Column(String(250), nullable=False, unique=True)
+    users = relationship("User", back_populates="role")
+
+    
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True)
+    username = Column(String(250), nullable=False, unique=True)
+    email = Column(String(250), nullable=False, unique=True)
+    password_hash = Column(String(512), nullable=False)
+    role_id = Column(Integer, ForeignKey("user_roles.id"), nullable=False)
+    role = relationship("UserRoles", back_populates="users")
+    
+    def set_password(self, password):
+        self.password_hash = PasswordHasher().hash(password)
+    
+    def verify_password(self, password):
+        try:
+            return PasswordHasher().verify(self.password_hash, password)
+        except VerifyMismatchError:
+            return False
+    
+
 
 class Client(Base):
     __tablename__ = "clients"
