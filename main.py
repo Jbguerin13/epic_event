@@ -1,21 +1,20 @@
 from database import SessionLocal
 from models.sql_models import User
 from views.main_menu import MainMenu
-from auth import authenticate_user
+from views.auth_view import AuthView
 
 def main():
     """Main function"""
-    print("=== Connexion ===")
-    username = input("Nom d'utilisateur: ")
-    password = input("Mot de passe: ")
+    # Authentification
+    auth_view = AuthView()
+    current_user = auth_view.login()
     
-    current_user = authenticate_user(username, password)
     if not current_user:
-        print("Authentification échouée")
+        print("Échec de l'authentification")
         return
 
     db = SessionLocal()
-    
+    #notion de transaction != de connexion
     try:
         main_menu = MainMenu(current_user, db)
         main_menu.run()
