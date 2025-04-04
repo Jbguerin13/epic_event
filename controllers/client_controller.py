@@ -2,34 +2,33 @@ from models.sql_models import Client, User
 from typing import List, Optional
 from datetime import date
 import re
+from permission import Permission
 
 class ClientController:
     def __init__(self, current_user: User, db):
-        self.current_user = current_user
         self.db = db
+        self.current_user = db.query(User).filter(User.id == current_user.id).first()
+        #pas génial ici, il faut return le current_user dans la vue client et casse la boucle while
 
+    @Permission.require_role("sailor")
     def get_all_clients(self) -> List[Client]:
         """Get all clients with permission check"""
-        if self.current_user.role.role not in ["manager", "sailor"]:
-            raise PermissionError("Not enough permissions to view clients")
         return self.db.query(Client).all()
 
+    @Permission.require_role("sailor")
     def get_client(self, client_id: int) -> Optional[Client]:
         """Get a specific client with permission check"""
-        if self.current_user.role.role not in ["manager", "sailor"]:
-            raise PermissionError("Not enough permissions to view client")
         return self.db.query(Client).filter(Client.id == client_id).first()
 
+    @Permission.require_role("sailor")
     def create_client(self, name: str, email: str, phone: str, name_company: str, contact_marketing: str) -> Client:
         """Create a new client with validation and permission check"""
-        if self.current_user.role.role not in ["manager", "sailor"]:
-            raise PermissionError("Not enough permissions to create client")
         if not name or not email or not phone or not name_company or not contact_marketing:
-            raise ValueError("every fields are required")
+            raise ValueError("Tous les champs sont obligatoires")
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-            raise ValueError("email format is invalid")
+            raise ValueError("Format d'email invalide")
         if not re.match(r"^\+?[0-9]{10,15}$", phone):
-            raise ValueError("phone format is invalid")
+            raise ValueError("Format de numéro de téléphone invalide")
 
         client = Client(
             name=name,
@@ -38,8 +37,7 @@ class ClientController:
             name_company=name_company,
             creation_date=date.today(),
             last_update=date.today(),
-            contact_marketing=contact_marketing,
-            user_id=self.current_user.id
+            contact_marketing=contact_marketing
         )
 
         self.db.add(client)
@@ -47,22 +45,21 @@ class ClientController:
         self.db.refresh(client)
         return client
 
+    @Permission.require_role("sailor")
     def update_client(self, client_id: int, name: str = None, email: str = None, 
                      phone: str = None, name_company: str = None, 
                      contact_marketing: str = None) -> Optional[Client]:
         """Update a client with validation and permission check"""
-        if self.current_user.role.role not in ["manager", "sailor"]:
-            raise PermissionError("Not enough permissions to update client")
-
         client = self.get_client(client_id)
         if not client:
-            raise ValueError("client not found")
+            raise ValueError("Client non trouvé")
 
         if email and not re.match(r"[^@]+@[^@]+\.[^@]+", email):
-            raise ValueError("email format is invalid")
+            raise ValueError("Format d'email invalide")
 
         if phone and not re.match(r"^\+?[0-9]{10,15}$", phone):
-            raise ValueError("phone format is invalid")
+            raise ValueError("Format de numéro de téléphone invalide")
+
         if name:
             client.name = name
         if email:

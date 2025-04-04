@@ -1,11 +1,12 @@
 from controllers.contract_controller import ContractController
-from models.sql_models import User
+from models.sql_models import User, Client
 from datetime import date
 import os
 
 class ContractView:
     def __init__(self, current_user: User, db):
         self.controller = ContractController(current_user, db)
+        self.db = db
 
     def clear_screen(self):
         """Clear the terminal screen"""
@@ -85,14 +86,25 @@ class ContractView:
         """Create a new contract"""
         try:
             print("\n=== Création d'un nouveau contrat ===")
-            client_id = int(input("ID du client: "))
+            
+            # Afficher la liste des clients
+            print("\nListe des clients disponibles :")
+            clients = self.db.query(Client).all()
+            for client in clients:
+                print(f"ID: {client.id} - {client.name} ({client.name_company})")
+            
+            # Demander le nom du client
+            client_name = input("\nNom du client: ")
+            client = self.db.query(Client).filter(Client.name == client_name).first()
+            if not client:
+                raise ValueError("Client non trouvé")
+            
             total_amount = int(input("Montant total: "))
-            outstanding_amount = int(input("Montant restant: "))
-            status_input = input("Statut (signé/non signé): ").lower()
-            status_contract = status_input == "signé"
+            outstanding_amount = int(input("Montant restant à payer: "))
+            status_contract = input("Contrat signé ? (oui/non): ").lower() == "oui"
 
             contract = self.controller.create_contract(
-                client_id=client_id,
+                client_id=client.id,
                 total_amount=total_amount,
                 outstanding_amount=outstanding_amount,
                 status_contract=status_contract

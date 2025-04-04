@@ -21,7 +21,7 @@ class User(Base):
     password_hash = Column(String(512), nullable=False)
     role_id = Column(Integer, ForeignKey("user_roles.id"), nullable=False)
     role = relationship("UserRoles", back_populates="users")
-    
+
     def set_password(self, password):
         self.password_hash = PasswordHasher().hash(password)
     
@@ -44,8 +44,8 @@ class Client(Base):
     creation_date = Column(Date, nullable=False)
     last_update = Column(Date, nullable=False)
     contact_marketing = Column(String(250), nullable=False)
-    
-    
+
+
 class Contract(Base):
     __tablename__ = "contracts"
     

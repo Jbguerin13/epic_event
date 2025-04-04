@@ -4,8 +4,8 @@ from datetime import date
 
 class ContractController:
     def __init__(self, current_user: User, db):
-        self.current_user = current_user
         self.db = db
+        self.current_user = db.query(User).filter(User.id == current_user.id).first()
 
     def get_all_contracts(self) -> List[Contract]:
         """Get all contracts with permission check"""
@@ -35,12 +35,11 @@ class ContractController:
             raise ValueError("amount must be between 0 and total amount")
 
         contract = Contract(
-            client_id=client_id,
+            client=client_id,
             total_amount=total_amount,
             outstanding_amount=outstanding_amount,
             creation_date=date.today(),
-            status_contract=status_contract,
-            user_id=self.current_user.id
+            status_contract=status_contract
         )
 
         self.db.add(contract)
@@ -48,21 +47,16 @@ class ContractController:
         self.db.refresh(contract)
         return contract
 
-    def update_contract(self, contract_id: int, client_id: int = None, 
-                       total_amount: int = None, outstanding_amount: int = None,
-                       status_contract: bool = None) -> Optional[Contract]:
+    def update_contract(self, contract_id: int, total_amount: int = None, 
+                       outstanding_amount: int = None, status_contract: bool = None) -> Optional[Contract]:
         """Update a contract with validation and permission check"""
         if self.current_user.role.role not in ["manager", "sailor"]:
             raise PermissionError("Not enough permissions to update contract")
-
+        
         contract = self.get_contract(contract_id)
         if not contract:
-            raise ValueError("contract not found")
-        if client_id:
-            client = self.db.query(Client).filter(Client.id == client_id).first()
-            if not client:
-                raise ValueError("client not found")
-            contract.client_id = client_id
+            raise ValueError("Contract not found")
+
         if total_amount is not None:
             if total_amount <= 0:
                 raise ValueError("amount must be greater than 0")
@@ -81,5 +75,5 @@ class ContractController:
         return contract
 
     def __del__(self):
-        """Close database session when controller is destroyed"""
+        """Close database session when controller is closed"""
         self.db.close() 

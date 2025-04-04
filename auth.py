@@ -37,10 +37,19 @@ def verify_token(token: str):
 def authenticate_user(username: str, password: str):
     """authenticate user"""
     session = SessionLocal()
-    user = session.query(User).filter(User.username == username).first()
-    session.close()
-    if not user:
+    try:
+        print(f"Tentative d'authentification pour l'utilisateur: {username}")
+        user = session.query(User).filter(User.username == username).first()
+        if not user:
+            print("Utilisateur non trouvé")
+            return None
+        if not user.verify_password(password):
+            print("Mot de passe incorrect")
+            return None
+        print(f"Utilisateur authentifié avec succès: {user.username} (ID: {user.id})")
+        return user
+    except Exception as e:
+        print(f"Erreur lors de l'authentification: {str(e)}")
         return None
-    if not user.verify_password(password):
-        return None
-    return user
+    finally:
+        session.close()

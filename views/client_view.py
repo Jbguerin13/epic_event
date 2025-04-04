@@ -145,3 +145,7 @@ class ClientView:
             print(f"\nErreur: {str(e)}")
         except Exception as e:
             print(f"\nUne erreur est survenue: {str(e)}") 
+            
+            
+#dans la vue liste client, afficher seulement l'id et le nom, nom de l'entreprise et le contact marketing
+#dans la vue detail client, rentrer le nom plutot que l'id
