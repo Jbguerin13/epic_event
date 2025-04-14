@@ -68,6 +68,3 @@ class Event(Base):
     location = Column(String(250), nullable=False)
     attendees = Column(Integer, nullable=False)
     notes = Column(String(500), nullable=True)
-
-#manque classe User et classe Role
-#manque classe UserRoles

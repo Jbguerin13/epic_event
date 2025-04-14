@@ -3,26 +3,31 @@ from typing import List, Optional
 from datetime import date
 import re
 from permission import Permission
+from sqlalchemy.orm import joinedload
 
 class ClientController:
     def __init__(self, current_user: User, db):
         self.db = db
-        self.current_user = db.query(User).filter(User.id == current_user.id).first()
+        self.current_user = db.query(User).options(joinedload(User.role)).filter(User.id == current_user.id).first()
         #pas génial ici, il faut return le current_user dans la vue client et casse la boucle while
 
-    @Permission.require_role("sailor")
     def get_all_clients(self) -> List[Client]:
         """Get all clients with permission check"""
+        if not Permission.has_permission(self.current_user, "sailor"):
+            raise PermissionError("Permission refusée. Rôle requis: sailor")
         return self.db.query(Client).all()
 
-    @Permission.require_role("sailor")
     def get_client(self, client_id: int) -> Optional[Client]:
         """Get a specific client with permission check"""
+        if not Permission.has_permission(self.current_user, "sailor"):
+            raise PermissionError("Permission refusée. Rôle requis: sailor")
         return self.db.query(Client).filter(Client.id == client_id).first()
 
-    @Permission.require_role("sailor")
     def create_client(self, name: str, email: str, phone: str, name_company: str, contact_marketing: str) -> Client:
         """Create a new client with validation and permission check"""
+        if not Permission.has_permission(self.current_user, "sailor"):
+            raise PermissionError("Permission refusée. Rôle requis: sailor")
+            
         if not name or not email or not phone or not name_company or not contact_marketing:
             raise ValueError("Tous les champs sont obligatoires")
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
@@ -45,11 +50,13 @@ class ClientController:
         self.db.refresh(client)
         return client
 
-    @Permission.require_role("sailor")
     def update_client(self, client_id: int, name: str = None, email: str = None, 
                      phone: str = None, name_company: str = None, 
                      contact_marketing: str = None) -> Optional[Client]:
         """Update a client with validation and permission check"""
+        if not Permission.has_permission(self.current_user, "sailor"):
+            raise PermissionError("Permission refusée. Rôle requis: sailor")
+            
         client = self.get_client(client_id)
         if not client:
             raise ValueError("Client non trouvé")

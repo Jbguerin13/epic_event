@@ -3,6 +3,7 @@ from database import SessionLocal
 from models.sql_models import User
 from views.main_menu import MainMenu
 from views.auth_view import AuthView
+from sqlalchemy.orm import joinedload
 
 sentry_sdk.init(
     dsn="https://bae205cf8dc0f8738ca45ad17008675a@o452613.ingest.us.sentry.io/4509094941425665",
@@ -24,6 +25,7 @@ def main():
     db = SessionLocal()
     
     try:
+        current_user = db.query(User).options(joinedload(User.role)).filter(User.id == current_user.id).first()
         main_menu = MainMenu(current_user, db)
         main_menu.run()
     finally:

@@ -1,6 +1,7 @@
 from models.sql_models import Event, User, Contract
 from typing import List, Optional
 from datetime import date
+from permission import Permission
 
 class EventController:
     def __init__(self, current_user: User, db):
@@ -9,21 +10,22 @@ class EventController:
 
     def get_all_events(self) -> List[Event]:
         """Get all events with permission check"""
-        if self.current_user.role.role not in ["manager", "sailor", "support"]:
-            raise PermissionError("Not enough permissions to view events")
+        if not Permission.has_permission(self.current_user, "support"):
+            raise PermissionError("Permission refusée. Rôle requis: support")
         return self.db.query(Event).all()
 
     def get_event(self, event_id: int) -> Optional[Event]:
         """Get a specific event with permission check"""
-        if self.current_user.role.role not in ["manager", "sailor", "support"]:
-            raise PermissionError("Not enough permissions to view event")
+        if not Permission.has_permission(self.current_user, "support"):
+            raise PermissionError("Permission refusée. Rôle requis: support")
         return self.db.query(Event).filter(Event.event_id == event_id).first()
 
     def create_event(self, event_name: str, contract_id: int, event_start_date: date,
                     event_end_date: date, location: str, attendees: int, notes: str = None) -> Event:
         """Create a new event with validation and permission check"""
-        if self.current_user.role.role not in ["manager", "sailor", "support"]:
-            raise PermissionError("Not enough permissions to create event")
+        if not Permission.has_permission(self.current_user, "support"):
+            raise PermissionError("Permission refusée. Rôle requis: support")
+            
         if not event_name or not contract_id or not event_start_date or not event_end_date or not location or not attendees:
             raise ValueError("fields are required")
         contract = self.db.query(Contract).filter(Contract.id == contract_id).first()
@@ -56,8 +58,9 @@ class EventController:
                     event_start_date: date = None, event_end_date: date = None,
                     location: str = None, attendees: int = None, notes: str = None) -> Optional[Event]:
         """Update an event with validation and permission check"""
-        if self.current_user.role.role not in ["manager", "sailor", "support"]:
-            raise PermissionError("Not enough permissions to update event")
+        if not Permission.has_permission(self.current_user, "support"):
+            raise PermissionError("Permission refusée. Rôle requis: support")
+            
         event = self.get_event(event_id)
         if not event:
             raise ValueError("Event not found")

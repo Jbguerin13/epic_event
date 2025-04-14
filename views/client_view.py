@@ -2,10 +2,12 @@ from controllers.client_controller import ClientController
 from models.sql_models import User
 from datetime import date
 import os
+from permission import Permission
 
 class ClientView:
     def __init__(self, current_user: User, db):
         self.controller = ClientController(current_user, db)
+        self.current_user = current_user
 
     def clear_screen(self):
         """Clear the terminal screen"""
@@ -16,9 +18,12 @@ class ClientView:
         print("\n=== Gestion des Clients ===")
         print("1. Liste des clients")
         print("2. Détails d'un client")
-        print("3. Créer un client")
-        print("4. Modifier un client")
-        print("5. Retour au menu principal")
+        if Permission.has_permission(self.current_user, "sailor"):
+            print("3. Créer un client")
+            print("4. Modifier un client")
+            print("5. Retour au menu principal")
+        else:
+            print("3. Retour au menu principal")
         return input("\nChoix: ")
 
     def run_menu(self):
@@ -31,15 +36,20 @@ class ClientView:
                 self.display_all_clients()
             elif choice == "2":
                 try:
-                    client_id = int(input("ID du client: "))
-                    self.display_client(client_id)
+                    client_name = input("Nom du client: ")
+                    self.display_client(client_name)
                 except ValueError:
-                    print("ID invalide")
+                    print("Nom invalide")
             elif choice == "3":
-                self.create_client()
-            elif choice == "4":
+                if Permission.has_permission(self.current_user, "sailor"):
+                    self.create_client()
+                else:
+                    break
+            elif choice == "4" and Permission.has_permission(self.current_user, "sailor"):
                 self.update_client()
-            elif choice == "5":
+            elif choice == "5" and Permission.has_permission(self.current_user, "sailor"):
+                break
+            elif choice == "3" and not Permission.has_permission(self.current_user, "sailor"):
                 break
             else:
                 print("Choix invalide")
@@ -54,23 +64,20 @@ class ClientView:
             for client in clients:
                 print(f"\nID: {client.id}")
                 print(f"Nom: {client.name}")
-                print(f"Email: {client.email}")
-                print(f"Téléphone: {client.phone}")
                 print(f"Entreprise: {client.name_company}")
-                print(f"Date de création: {client.creation_date}")
-                print(f"Dernière mise à jour: {client.last_update}")
                 print(f"Contact marketing: {client.contact_marketing}")
         except PermissionError as e:
             print(f"\nErreur: {str(e)}")
         except Exception as e:
             print(f"\nUne erreur est survenue: {str(e)}")
 
-    def display_client(self, client_id: int):
-        """Display a specific client"""
+    def display_client(self, client_name: str):
+        """Display a specific client by name"""
         try:
-            client = self.controller.get_client(client_id)
+            client = self.controller.get_client_by_name(client_name)
             if client:
-                print(f"\n=== Client {client_id} ===")
+                print(f"\n=== Client {client.name} ===")
+                print(f"ID: {client.id}")
                 print(f"Nom: {client.name}")
                 print(f"Email: {client.email}")
                 print(f"Téléphone: {client.phone}")
@@ -79,7 +86,7 @@ class ClientView:
                 print(f"Dernière mise à jour: {client.last_update}")
                 print(f"Contact marketing: {client.contact_marketing}")
             else:
-                print(f"\nClient {client_id} non trouvé")
+                print(f"\nClient {client_name} non trouvé")
         except PermissionError as e:
             print(f"\nErreur: {str(e)}")
         except Exception as e:
@@ -123,7 +130,6 @@ class ClientView:
             name_company = input("Nouveau nom d'entreprise (ou vide): ")
             contact_marketing = input("Nouveau contact marketing (ou vide): ")
 
-            # Convertir les entrées vides en None
             name = name if name else None
             email = email if email else None
             phone = phone if phone else None
@@ -146,6 +152,3 @@ class ClientView:
         except Exception as e:
             print(f"\nUne erreur est survenue: {str(e)}") 
             
-            
-#dans la vue liste client, afficher seulement l'id et le nom, nom de l'entreprise et le contact marketing
-#dans la vue detail client, rentrer le nom plutot que l'id

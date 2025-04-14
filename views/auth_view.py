@@ -2,6 +2,7 @@ from auth import authenticate_user
 from controllers.user_controller import UserController
 from database import SessionLocal
 import os
+from getpass import getpass
 
 class AuthView:
     def __init__(self):
@@ -26,7 +27,7 @@ class AuthView:
         self.clear_screen()
         print("=== Connexion ===")
         username = input("Nom d'utilisateur: ")
-        password = input("Mot de passe: ")
+        password = getpass("Mot de passe: ")
         return username, password
 
     def display_roles(self):
@@ -54,8 +55,8 @@ class AuthView:
         print("=== Création de compte ===")
         username = input("Nom d'utilisateur: ")
         email = input("Email: ")
-        password = input("Mot de passe: ")
-        confirm_password = input("Confirmer le mot de passe: ")
+        password = getpass("Mot de passe: ")
+        confirm_password = getpass("Confirmer le mot de passe: ")
         
         if password != confirm_password:
             raise ValueError("Les mots de passe ne correspondent pas")

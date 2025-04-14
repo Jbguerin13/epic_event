@@ -2,11 +2,13 @@ from controllers.contract_controller import ContractController
 from models.sql_models import User, Client
 from datetime import date
 import os
+from permission import Permission
 
 class ContractView:
     def __init__(self, current_user: User, db):
         self.controller = ContractController(current_user, db)
         self.db = db
+        self.current_user = current_user
 
     def clear_screen(self):
         """Clear the terminal screen"""
@@ -17,9 +19,12 @@ class ContractView:
         print("\n=== Gestion des Contrats ===")
         print("1. Liste des contrats")
         print("2. Détails d'un contrat")
-        print("3. Créer un contrat")
-        print("4. Modifier un contrat")
-        print("5. Retour au menu principal")
+        if Permission.has_permission(self.current_user, "sailor"):
+            print("3. Créer un contrat")
+            print("4. Modifier un contrat")
+            print("5. Retour au menu principal")
+        else:
+            print("3. Retour au menu principal")
         return input("\nChoix: ")
 
     def run_menu(self):
@@ -32,15 +37,20 @@ class ContractView:
                 self.display_all_contracts()
             elif choice == "2":
                 try:
-                    contract_id = int(input("ID du contrat: "))
-                    self.display_contract(contract_id)
+                    client_name = input("Nom du client: ")
+                    self.display_contract(client_name)
                 except ValueError:
-                    print("ID invalide")
+                    print("Nom invalide")
             elif choice == "3":
-                self.create_contract()
-            elif choice == "4":
+                if Permission.has_permission(self.current_user, "sailor"):
+                    self.create_contract()
+                else:
+                    break
+            elif choice == "4" and Permission.has_permission(self.current_user, "sailor"):
                 self.update_contract()
-            elif choice == "5":
+            elif choice == "5" and Permission.has_permission(self.current_user, "sailor"):
+                break
+            elif choice == "3" and not Permission.has_permission(self.current_user, "sailor"):
                 break
             else:
                 print("Choix invalide")
@@ -53,8 +63,9 @@ class ContractView:
             contracts = self.controller.get_all_contracts()
             print("\n=== Liste des contrats ===")
             for contract in contracts:
+                client = self.db.query(Client).filter(Client.id == contract.client).first()
                 print(f"\nID: {contract.id}")
-                print(f"Client ID: {contract.client_id}")
+                print(f"Client: {client.name} ({client.name_company})")
                 print(f"Montant total: {contract.total_amount}")
                 print(f"Montant restant: {contract.outstanding_amount}")
                 print(f"Date de création: {contract.creation_date}")
@@ -64,19 +75,25 @@ class ContractView:
         except Exception as e:
             print(f"\nUne erreur est survenue: {str(e)}")
 
-    def display_contract(self, contract_id: int):
+    def display_contract(self, client_name: str):
         """Display a specific contract"""
         try:
-            contract = self.controller.get_contract(contract_id)
+            client = self.db.query(Client).filter(Client.name == client_name).first()
+            if not client:
+                print(f"\nClient {client_name} non trouvé")
+                return
+                
+            contract = self.controller.get_contract_by_client(client.id)
             if contract:
-                print(f"\n=== Contrat {contract_id} ===")
-                print(f"Client ID: {contract.client_id}")
+                print(f"\n=== Contrat pour {client_name} ===")
+                print(f"ID: {contract.id}")
+                print(f"Client: {client.name} ({client.name_company})")
                 print(f"Montant total: {contract.total_amount}")
                 print(f"Montant restant: {contract.outstanding_amount}")
                 print(f"Date de création: {contract.creation_date}")
                 print(f"Statut: {'Signé' if contract.status_contract else 'Non signé'}")
             else:
-                print(f"\nContrat {contract_id} non trouvé")
+                print(f"\nAucun contrat trouvé pour le client {client_name}")
         except PermissionError as e:
             print(f"\nErreur: {str(e)}")
         except Exception as e:
@@ -91,7 +108,7 @@ class ContractView:
             print("\nListe des clients disponibles :")
             clients = self.db.query(Client).all()
             for client in clients:
-                print(f"ID: {client.id} - {client.name} ({client.name_company})")
+                print(f"{client.name} ({client.name_company})")
             
             # Demander le nom du client
             client_name = input("\nNom du client: ")
@@ -109,7 +126,7 @@ class ContractView:
                 outstanding_amount=outstanding_amount,
                 status_contract=status_contract
             )
-            print(f"\nContrat créé avec succès (ID: {contract.id})")
+            print(f"\nContrat créé avec succès pour {client_name}")
         except ValueError as e:
             print(f"\nErreur de validation: {str(e)}")
         except PermissionError as e:
@@ -121,16 +138,17 @@ class ContractView:
         """Update a contract"""
         try:
             print("\n=== Mise à jour d'un contrat ===")
-            contract_id = int(input("ID du contrat à modifier: "))
+            client_name = input("Nom du client: ")
+            client = self.db.query(Client).filter(Client.name == client_name).first()
+            if not client:
+                raise ValueError("Client non trouvé")
             
             print("\nLaissez vide les champs que vous ne souhaitez pas modifier")
-            client_id_input = input("Nouvel ID client (ou vide): ")
             total_amount_input = input("Nouveau montant total (ou vide): ")
             outstanding_amount_input = input("Nouveau montant restant (ou vide): ")
             status_input = input("Nouveau statut (signé/non signé/vide): ").lower()
 
             # Convertir les entrées vides en None
-            client_id = int(client_id_input) if client_id_input else None
             total_amount = int(total_amount_input) if total_amount_input else None
             outstanding_amount = int(outstanding_amount_input) if outstanding_amount_input else None
             status_contract = None
@@ -138,13 +156,12 @@ class ContractView:
                 status_contract = status_input == "signé"
 
             contract = self.controller.update_contract(
-                contract_id=contract_id,
-                client_id=client_id,
+                client_id=client.id,
                 total_amount=total_amount,
                 outstanding_amount=outstanding_amount,
                 status_contract=status_contract
             )
-            print(f"\nContrat mis à jour avec succès (ID: {contract.id})")
+            print(f"\nContrat mis à jour avec succès pour {client_name}")
         except ValueError as e:
             print(f"\nErreur de validation: {str(e)}")
         except PermissionError as e:
