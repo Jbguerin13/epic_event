@@ -52,12 +52,14 @@ class UserView:
             print("1. Manager - Gestion complète du système")
             print("2. Sailor - Gestion des clients et contrats")
             print("3. Support - Gestion des événements")
+            print("4. Admin - Accès total au système")
             
-            role_choice = input("\nChoisissez un rôle (1-3): ")
+            role_choice = input("\nChoisissez un rôle (1-4): ")
             role_map = {
                 "1": "manager",
                 "2": "sailor",
-                "3": "support"
+                "3": "support",
+                "4": "admin"
             }
             
             if role_choice not in role_map:

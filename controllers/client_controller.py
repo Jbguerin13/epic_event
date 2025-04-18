@@ -12,20 +12,20 @@ class ClientController:
         #pas génial ici, il faut return le current_user dans la vue client et casse la boucle while
 
     def get_all_clients(self) -> List[Client]:
-        """Get all clients with permission check"""
-        if not Permission.has_permission(self.current_user, "sailor"):
-            raise PermissionError("Permission refusée. Rôle requis: sailor")
+        """Get all clients"""
         return self.db.query(Client).all()
 
     def get_client(self, client_id: int) -> Optional[Client]:
-        """Get a specific client with permission check"""
-        if not Permission.has_permission(self.current_user, "sailor"):
-            raise PermissionError("Permission refusée. Rôle requis: sailor")
+        """Get a specific client by ID"""
         return self.db.query(Client).filter(Client.id == client_id).first()
+
+    def get_client_by_name(self, name: str) -> Optional[Client]:
+        """Get a specific client by name"""
+        return self.db.query(Client).filter(Client.name == name).first()
 
     def create_client(self, name: str, email: str, phone: str, name_company: str, contact_marketing: str) -> Client:
         """Create a new client with validation and permission check"""
-        if not Permission.has_permission(self.current_user, "sailor"):
+        if not Permission.can_create_client(self.current_user):
             raise PermissionError("Permission refusée. Rôle requis: sailor")
             
         if not name or not email or not phone or not name_company or not contact_marketing:
@@ -42,7 +42,8 @@ class ClientController:
             name_company=name_company,
             creation_date=date.today(),
             last_update=date.today(),
-            contact_marketing=contact_marketing
+            contact_marketing=contact_marketing,
+            sailor_id=self.current_user.id  # Associer le client au sailor qui le crée
         )
 
         self.db.add(client)
@@ -54,13 +55,13 @@ class ClientController:
                      phone: str = None, name_company: str = None, 
                      contact_marketing: str = None) -> Optional[Client]:
         """Update a client with validation and permission check"""
-        if not Permission.has_permission(self.current_user, "sailor"):
-            raise PermissionError("Permission refusée. Rôle requis: sailor")
-            
         client = self.get_client(client_id)
         if not client:
             raise ValueError("Client non trouvé")
 
+        if not Permission.can_update_client(self.current_user, client):
+            raise PermissionError("Permission refusée. Vous ne pouvez modifier que vos propres clients.")
+            
         if email and not re.match(r"[^@]+@[^@]+\.[^@]+", email):
             raise ValueError("Format d'email invalide")
 

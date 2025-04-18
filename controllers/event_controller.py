@@ -9,28 +9,30 @@ class EventController:
         self.db = db
 
     def get_all_events(self) -> List[Event]:
-        """Get all events with permission check"""
-        if not Permission.has_permission(self.current_user, "support"):
-            raise PermissionError("Permission refusée. Rôle requis: support")
+        """Get all events"""
         return self.db.query(Event).all()
 
     def get_event(self, event_id: int) -> Optional[Event]:
-        """Get a specific event with permission check"""
-        if not Permission.has_permission(self.current_user, "support"):
-            raise PermissionError("Permission refusée. Rôle requis: support")
-        return self.db.query(Event).filter(Event.event_id == event_id).first()
+        """Get a specific event by ID"""
+        return self.db.query(Event).filter(Event.id == event_id).first()
+
+    def get_event_by_name(self, event_name: str) -> Optional[Event]:
+        """Get a specific event by name"""
+        return self.db.query(Event).filter(Event.event_name == event_name).first()
 
     def create_event(self, event_name: str, contract_id: int, event_start_date: date,
                     event_end_date: date, location: str, attendees: int, notes: str = None) -> Event:
         """Create a new event with validation and permission check"""
-        if not Permission.has_permission(self.current_user, "support"):
-            raise PermissionError("Permission refusée. Rôle requis: support")
-            
         if not event_name or not contract_id or not event_start_date or not event_end_date or not location or not attendees:
             raise ValueError("fields are required")
+            
         contract = self.db.query(Contract).filter(Contract.id == contract_id).first()
         if not contract:
             raise ValueError("contract not found")
+
+        if not Permission.can_create_event(self.current_user, contract):
+            raise PermissionError("Permission refusée. Vous ne pouvez créer des événements que pour vos clients et uniquement si le contrat est signé.")
+            
         if event_start_date < date.today():
             raise ValueError("start date cannot be in the past")
         if event_end_date < event_start_date:
@@ -46,7 +48,7 @@ class EventController:
             location=location,
             attendees=attendees,
             notes=notes,
-            user_id=self.current_user.id
+            support_id=None  # Le support_id sera assigné plus tard par un manager
         )
 
         self.db.add(event)
@@ -58,12 +60,13 @@ class EventController:
                     event_start_date: date = None, event_end_date: date = None,
                     location: str = None, attendees: int = None, notes: str = None) -> Optional[Event]:
         """Update an event with validation and permission check"""
-        if not Permission.has_permission(self.current_user, "support"):
-            raise PermissionError("Permission refusée. Rôle requis: support")
-            
         event = self.get_event(event_id)
         if not event:
             raise ValueError("Event not found")
+
+        if not Permission.can_update_event(self.current_user, event):
+            raise PermissionError("Permission refusée. Vous ne pouvez modifier que les événements qui vous sont assignés.")
+            
         if contract_id:
             contract = self.db.query(Contract).filter(Contract.id == contract_id).first()
             if not contract:
