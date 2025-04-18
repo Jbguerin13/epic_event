@@ -1,4 +1,4 @@
-from models.sql_models import Event, User, Contract
+from models.sql_models import Event, User, Contract, Client
 from typing import List, Optional
 from datetime import date
 from permission import Permission
@@ -30,9 +30,17 @@ class EventController:
         if not contract:
             raise ValueError("contract not found")
 
-        if not Permission.can_create_event(self.current_user, contract):
-            raise PermissionError("Permission refusée. Vous ne pouvez créer des événements que pour vos clients et uniquement si le contrat est signé.")
+        if self.current_user.role.role == "sailor":
+            client = self.db.query(Client).filter(Client.id == contract.client).first()
+            if not client:
+                raise ValueError("client not found")
             
+            if client.contact_marketing != self.current_user.username:
+                raise PermissionError("You are not linked to this client")
+            
+            if not contract.status_contract:
+                raise PermissionError("The contract is not signed yet")
+
         if event_start_date < date.today():
             raise ValueError("start date cannot be in the past")
         if event_end_date < event_start_date:
@@ -48,7 +56,7 @@ class EventController:
             location=location,
             attendees=attendees,
             notes=notes,
-            support_id=None  # Le support_id sera assigné plus tard par un manager
+            support_id=None
         )
 
         self.db.add(event)

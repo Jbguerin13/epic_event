@@ -21,11 +21,11 @@ class ContractController:
         client = self.db.query(Client).filter(Client.name == client_name).first()
         if not client:
             return None
-        return self.db.query(Contract).filter(Contract.client_id == client.id).first()
+        return self.db.query(Contract).filter(Contract.client == client.id).first()
 
     def get_contract_by_client(self, client_id: int) -> Optional[Contract]:
         """Get a contract by client ID"""
-        return self.db.query(Contract).filter(Contract.client_id == client_id).first()
+        return self.db.query(Contract).filter(Contract.client == client_id).first()
 
     def create_contract(self, client_id: int, total_amount: int, 
                        outstanding_amount: int, status_contract: bool) -> Contract:
@@ -44,7 +44,7 @@ class ContractController:
             raise ValueError("amount must be between 0 and total amount")
 
         contract = Contract(
-            client_id=client_id,
+            client=client_id,
             total_amount=total_amount,
             outstanding_amount=outstanding_amount,
             creation_date=date.today(),

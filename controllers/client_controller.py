@@ -9,7 +9,6 @@ class ClientController:
     def __init__(self, current_user: User, db):
         self.db = db
         self.current_user = db.query(User).options(joinedload(User.role)).filter(User.id == current_user.id).first()
-        #pas génial ici, il faut return le current_user dans la vue client et casse la boucle while
 
     def get_all_clients(self) -> List[Client]:
         """Get all clients"""
@@ -23,17 +22,19 @@ class ClientController:
         """Get a specific client by name"""
         return self.db.query(Client).filter(Client.name == name).first()
 
-    def create_client(self, name: str, email: str, phone: str, name_company: str, contact_marketing: str) -> Client:
+    def create_client(self, name: str, email: str, phone: str, name_company: str) -> Client:
         """Create a new client with validation and permission check"""
         if not Permission.can_create_client(self.current_user):
             raise PermissionError("Permission refusée. Rôle requis: sailor")
             
-        if not name or not email or not phone or not name_company or not contact_marketing:
+        if not name or not email or not phone or not name_company:
             raise ValueError("Tous les champs sont obligatoires")
         if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
             raise ValueError("Format d'email invalide")
         if not re.match(r"^\+?[0-9]{10,15}$", phone):
             raise ValueError("Format de numéro de téléphone invalide")
+
+        contact_marketing = self.current_user.username
 
         client = Client(
             name=name,
@@ -42,8 +43,7 @@ class ClientController:
             name_company=name_company,
             creation_date=date.today(),
             last_update=date.today(),
-            contact_marketing=contact_marketing,
-            sailor_id=self.current_user.id  # Associer le client au sailor qui le crée
+            contact_marketing=contact_marketing
         )
 
         self.db.add(client)
@@ -51,16 +51,16 @@ class ClientController:
         self.db.refresh(client)
         return client
 
-    def update_client(self, client_id: int, name: str = None, email: str = None, 
-                     phone: str = None, name_company: str = None, 
-                     contact_marketing: str = None) -> Optional[Client]:
+    def update_client(self, client_name: str, name: str = None, email: str = None, 
+                     phone: str = None, name_company: str = None) -> Optional[Client]:
         """Update a client with validation and permission check"""
-        client = self.get_client(client_id)
+        client = self.get_client_by_name(client_name)
         if not client:
             raise ValueError("Client non trouvé")
 
-        if not Permission.can_update_client(self.current_user, client):
-            raise PermissionError("Permission refusée. Vous ne pouvez modifier que vos propres clients.")
+        if self.current_user.role.role == "sailor":
+            if client.contact_marketing != self.current_user.username:
+                raise PermissionError("You are not linked to this client, you can't update his details")
             
         if email and not re.match(r"[^@]+@[^@]+\.[^@]+", email):
             raise ValueError("Format d'email invalide")
@@ -76,8 +76,6 @@ class ClientController:
             client.phone = phone
         if name_company:
             client.name_company = name_company
-        if contact_marketing:
-            client.contact_marketing = contact_marketing
 
         client.last_update = date.today()
         self.db.commit()

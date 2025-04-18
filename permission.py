@@ -9,7 +9,7 @@ class Permission:
     def has_permission(user: User, required_role: str) -> bool:
         """Check if user has the required role"""
         if user.role.role == "admin":
-            return True  # Admin a tous les droits
+            return True
         elif user.role.role == "manager":
             return required_role in ["manager", "sailor", "support"]
         elif user.role.role == "sailor":
@@ -33,7 +33,7 @@ class Permission:
     @staticmethod
     def can_view(user: User) -> bool:
         """Check if user can view data"""
-        return True  # Tous les utilisateurs peuvent voir les données
+        return True
 
     @staticmethod
     def can_create_client(user: User) -> bool:
@@ -46,14 +46,13 @@ class Permission:
         if user.role.role in ["admin", "manager"]:
             return True
         if user.role.role == "sailor":
-            # Un sailor ne peut modifier que ses propres clients
             return client.sailor_id == user.id
         return False
 
     @staticmethod
     def can_create_contract(user: User) -> bool:
         """Check if user can create contracts"""
-        return user.role.role in ["admin", "manager", "sailor"]
+        return user.role.role in ["admin", "manager"]
 
     @staticmethod
     def can_update_contract(user: User, contract: object) -> bool:
@@ -61,9 +60,8 @@ class Permission:
         if user.role.role in ["admin", "manager"]:
             return True
         if user.role.role == "sailor":
-            # Un sailor ne peut modifier que les contrats de ses clients
             client = contract.client
-            return client.sailor_id == user.id
+            return client.contact_marketing == user.username
         return False
 
     @staticmethod
@@ -72,7 +70,6 @@ class Permission:
         if user.role.role in ["admin", "manager"]:
             return True
         if user.role.role == "sailor":
-            # Un sailor ne peut créer des événements que pour ses clients et si le contrat est signé
             client = contract.client
             return client.sailor_id == user.id and contract.status_contract
         return False
@@ -83,14 +80,13 @@ class Permission:
         if user.role.role in ["admin", "manager"]:
             return True
         if user.role.role == "support":
-            # Un support peut modifier les événements qui lui sont assignés
             return event.support_id == user.id
         return False
 
     @staticmethod
     def can_view_all(user: User) -> bool:
         """Check if user can view all records"""
-        return True  # Tous les utilisateurs peuvent voir toutes les données
+        return True
 
     @staticmethod
     def can_view_events_without_support(user: User) -> bool:

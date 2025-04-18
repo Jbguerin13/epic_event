@@ -106,22 +106,26 @@ class EventView:
             print("\n=== Création d'un nouvel événement ===")
             event_name = input("Nom de l'événement: ")
             
-            # Afficher la liste des clients
             print("\nListe des clients disponibles :")
             clients = self.db.query(Client).all()
             for client in clients:
                 print(f"{client.name} ({client.name_company})")
             
-            # Demander le nom du client
             client_name = input("\nNom du client: ")
             client = self.db.query(Client).filter(Client.name == client_name).first()
             if not client:
                 raise ValueError("Client non trouvé")
             
-            # Vérifier si le client a un contrat
+            if self.current_user.role.role == "sailor":
+                if client.contact_marketing != self.current_user.username:
+                    raise PermissionError("You are not linked to this client")
+            
             contract = self.db.query(Contract).filter(Contract.client == client.id).first()
             if not contract:
                 raise ValueError("Le client n'a pas de contrat")
+            
+            if self.current_user.role.role == "sailor" and not contract.status_contract:
+                raise PermissionError("The contract is not signed yet")
             
             start_date = input("Date de début (YYYY-MM-DD): ")
             end_date = input("Date de fin (YYYY-MM-DD): ")
@@ -158,13 +162,11 @@ class EventView:
             print("\nLaissez vide les champs que vous ne souhaitez pas modifier")
             new_event_name = input("Nouveau nom (ou vide): ")
             
-            # Afficher la liste des clients
             print("\nListe des clients disponibles :")
             clients = self.db.query(Client).all()
             for client in clients:
                 print(f"{client.name} ({client.name_company})")
             
-            # Demander le nom du client
             client_name = input("\nNouveau client (ou vide): ")
             contract_id = None
             if client_name:
@@ -197,7 +199,6 @@ class EventView:
             attendees_input = input("Nouveau nombre de participants (ou vide): ")
             notes = input("Nouvelles notes (ou vide): ")
 
-            # Convertir les entrées vides en None
             new_event_name = new_event_name if new_event_name else None
             attendees = int(attendees_input) if attendees_input else None
             notes = notes if notes else None

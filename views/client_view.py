@@ -100,14 +100,12 @@ class ClientView:
             email = input("Email: ")
             phone = input("Téléphone: ")
             name_company = input("Nom de l'entreprise: ")
-            contact_marketing = input("Contact marketing: ")
 
             client = self.controller.create_client(
                 name=name,
                 email=email,
                 phone=phone,
-                name_company=name_company,
-                contact_marketing=contact_marketing
+                name_company=name_company
             )
             print(f"\nClient créé avec succès (ID: {client.id})")
         except ValueError as e:
@@ -121,28 +119,32 @@ class ClientView:
         """Update a client"""
         try:
             print("\n=== Mise à jour d'un client ===")
-            client_id = int(input("ID du client à modifier: "))
+            client_name = input("Nom du client à modifier: ")
+            
+            client = self.controller.get_client_by_name(client_name)
+            if not client:
+                raise ValueError("Client non trouvé")
+                
+            if self.current_user.role.role == "sailor" and client.contact_marketing != self.current_user.username:
+                raise PermissionError("You are not linked to this client, you can't update his details")
             
             print("\nLaissez vide les champs que vous ne souhaitez pas modifier")
             name = input("Nouveau nom (ou vide): ")
             email = input("Nouvel email (ou vide): ")
             phone = input("Nouveau téléphone (ou vide): ")
             name_company = input("Nouveau nom d'entreprise (ou vide): ")
-            contact_marketing = input("Nouveau contact marketing (ou vide): ")
 
             name = name if name else None
             email = email if email else None
             phone = phone if phone else None
             name_company = name_company if name_company else None
-            contact_marketing = contact_marketing if contact_marketing else None
 
             client = self.controller.update_client(
-                client_id=client_id,
+                client_name=client_name,
                 name=name,
                 email=email,
                 phone=phone,
-                name_company=name_company,
-                contact_marketing=contact_marketing
+                name_company=name_company
             )
             print(f"\nClient mis à jour avec succès (ID: {client.id})")
         except ValueError as e:
@@ -150,5 +152,9 @@ class ClientView:
         except PermissionError as e:
             print(f"\nErreur: {str(e)}")
         except Exception as e:
-            print(f"\nUne erreur est survenue: {str(e)}") 
+            print(f"\nUne erreur est survenue: {str(e)}")
+
+    def __del__(self):
+        """Close database session when view is closed"""
+        self.db.close() 
             
