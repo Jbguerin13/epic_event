@@ -8,8 +8,16 @@ secret
 secret1234
 role: manager
 
+the_manager
+secret2025!
+role: manager
+
 the_sailor
 secret2025!
+role: sailor
+
+test_create_sailor
+test1234
 role: sailor
 
 the_support

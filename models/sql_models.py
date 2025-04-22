@@ -68,3 +68,4 @@ class Event(Base):
     location = Column(String(250), nullable=False)
     attendees = Column(Integer, nullable=False)
     notes = Column(String(500), nullable=True)
+    support_id = Column(Integer, ForeignKey("users.id"), nullable=True)

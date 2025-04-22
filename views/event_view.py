@@ -1,5 +1,5 @@
 from controllers.event_controller import EventController
-from models.sql_models import User, Contract, Client
+from models.sql_models import User, Contract, Client, Event
 from datetime import date, datetime
 import os
 from permission import Permission
@@ -19,10 +19,23 @@ class EventView:
         print("\n=== Gestion des Événements ===")
         print("1. Liste des événements")
         print("2. Détails d'un événement")
-        if Permission.has_permission(self.current_user, "support"):
+        if self.current_user.role.role == "admin":
             print("3. Créer un événement")
             print("4. Modifier un événement")
-            print("5. Retour au menu principal")
+            print("5. Filtrer les événements sans support")
+            print("6. Assigner un support à un événement")
+            print("7. Retour au menu principal")
+        elif self.current_user.role.role == "manager":
+            print("3. Modifier un événement")
+            print("4. Filtrer les événements sans support")
+            print("5. Assigner un support à un événement")
+            print("6. Retour au menu principal")
+        elif self.current_user.role.role == "sailor":
+            print("3. Créer un événement")
+            print("4. Retour au menu principal")
+        elif self.current_user.role.role == "support":
+            print("3. Modifier un événement")
+            print("4. Retour au menu principal")
         else:
             print("3. Retour au menu principal")
         return input("\nChoix: ")
@@ -42,15 +55,36 @@ class EventView:
                 except ValueError:
                     print("Nom invalide")
             elif choice == "3":
-                if Permission.has_permission(self.current_user, "support"):
+                if self.current_user.role.role == "admin":
                     self.create_event()
+                elif self.current_user.role.role == "manager":
+                    self.update_event()
+                elif self.current_user.role.role == "sailor":
+                    self.create_event()
+                elif self.current_user.role.role == "support":
+                    self.update_event()
                 else:
                     break
-            elif choice == "4" and Permission.has_permission(self.current_user, "support"):
-                self.update_event()
-            elif choice == "5" and Permission.has_permission(self.current_user, "support"):
-                break
-            elif choice == "3" and not Permission.has_permission(self.current_user, "support"):
+            elif choice == "4":
+                if self.current_user.role.role == "admin":
+                    self.update_event()
+                elif self.current_user.role.role == "manager":
+                    self.display_events_without_support()
+                elif self.current_user.role.role == "support":
+                    break
+                elif self.current_user.role.role == "sailor":
+                    break
+            elif choice == "5":
+                if self.current_user.role.role == "admin":
+                    self.display_events_without_support()
+                elif self.current_user.role.role == "manager":
+                    self.assign_support_to_event()
+            elif choice == "6":
+                if self.current_user.role.role == "admin":
+                    self.assign_support_to_event()
+                elif self.current_user.role.role == "manager":
+                    break
+            elif choice == "7" and self.current_user.role.role == "admin":
                 break
             else:
                 print("Choix invalide")
@@ -63,8 +97,8 @@ class EventView:
             events = self.controller.get_all_events()
             print("\n=== Liste des événements ===")
             for event in events:
-                contract = self.db.query(Contract).filter(Contract.id == event.contract_id).first()
-                client = self.db.query(Client).filter(Client.id == contract.client_id).first()
+                contract = self.db.query(Contract).filter(Contract.id == event.contract).first()
+                client = self.db.query(Client).filter(Client.id == contract.client).first()
                 print(f"\nNom: {event.event_name}")
                 print(f"Client: {client.name} ({client.name_company})")
                 print(f"Date de début: {event.event_start_date}")
@@ -83,8 +117,8 @@ class EventView:
         try:
             event = self.controller.get_event_by_name(event_name)
             if event:
-                contract = self.db.query(Contract).filter(Contract.id == event.contract_id).first()
-                client = self.db.query(Client).filter(Client.id == contract.client_id).first()
+                contract = self.db.query(Contract).filter(Contract.id == event.contract).first()
+                client = self.db.query(Client).filter(Client.id == contract.client).first()
                 print(f"\n=== Événement {event_name} ===")
                 print(f"Client: {client.name} ({client.name_company})")
                 print(f"Date de début: {event.event_start_date}")
@@ -218,5 +252,32 @@ class EventView:
             print(f"\nErreur de validation: {str(e)}")
         except PermissionError as e:
             print(f"\nErreur: {str(e)}")
+        except Exception as e:
+            print(f"\nUne erreur est survenue: {str(e)}")
+
+    def display_events_without_support(self):
+        """Display events without support"""
+        try:
+            events = self.db.query(Event).all()  # Afficher tous les événements
+            print("\n=== Liste des événements ===")
+            for event in events:
+                contract = self.db.query(Contract).filter(Contract.id == event.contract).first()
+                client = self.db.query(Client).filter(Client.id == contract.client).first()
+                print(f"\nNom: {event.event_name}")
+                print(f"Client: {client.name} ({client.name_company})")
+                print(f"Date de début: {event.event_start_date}")
+                print(f"Date de fin: {event.event_end_date}")
+                print(f"Lieu: {event.location}")
+                print(f"Nombre de participants: {event.attendees}")
+                if event.notes:
+                    print(f"Notes: {event.notes}")
+        except Exception as e:
+            print(f"\nUne erreur est survenue: {str(e)}")
+
+    def assign_support_to_event(self):
+        """Assign a support to an event"""
+        try:
+            print("\n=== Assigner un support à un événement ===")
+            print("Cette fonctionnalité n'est pas disponible pour le moment.")
         except Exception as e:
             print(f"\nUne erreur est survenue: {str(e)}") 

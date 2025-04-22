@@ -50,13 +50,12 @@ class EventController:
 
         event = Event(
             event_name=event_name,
-            contract_id=contract_id,
+            contract=contract_id,
             event_start_date=event_start_date,
             event_end_date=event_end_date,
             location=location,
             attendees=attendees,
-            notes=notes,
-            support_id=None
+            notes=notes
         )
 
         self.db.add(event)
@@ -79,7 +78,7 @@ class EventController:
             contract = self.db.query(Contract).filter(Contract.id == contract_id).first()
             if not contract:
                 raise ValueError("Contract not found")
-            event.contract_id = contract_id
+            event.contract = contract_id
         if event_start_date:
             if event_start_date < date.today():
                 raise ValueError("start date cannot be in the past")

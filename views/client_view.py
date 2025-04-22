@@ -18,7 +18,11 @@ class ClientView:
         print("\n=== Gestion des Clients ===")
         print("1. Liste des clients")
         print("2. Détails d'un client")
-        if Permission.has_permission(self.current_user, "sailor"):
+        if self.current_user.role.role == "sailor":
+            print("3. Créer un client")
+            print("4. Modifier un client")
+            print("5. Retour au menu principal")
+        elif self.current_user.role.role == "admin":
             print("3. Créer un client")
             print("4. Modifier un client")
             print("5. Retour au menu principal")
@@ -41,15 +45,15 @@ class ClientView:
                 except ValueError:
                     print("Nom invalide")
             elif choice == "3":
-                if Permission.has_permission(self.current_user, "sailor"):
+                if self.current_user.role.role in ["admin", "sailor"]:
                     self.create_client()
                 else:
                     break
-            elif choice == "4" and Permission.has_permission(self.current_user, "sailor"):
+            elif choice == "4" and self.current_user.role.role in ["admin", "sailor"]:
                 self.update_client()
-            elif choice == "5" and Permission.has_permission(self.current_user, "sailor"):
+            elif choice == "5" and self.current_user.role.role in ["admin", "sailor"]:
                 break
-            elif choice == "3" and not Permission.has_permission(self.current_user, "sailor"):
+            elif choice == "3" and self.current_user.role.role not in ["admin", "sailor"]:
                 break
             else:
                 print("Choix invalide")
