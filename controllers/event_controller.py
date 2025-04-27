@@ -14,7 +14,7 @@ class EventController:
 
     def get_event(self, event_id: int) -> Optional[Event]:
         """Get a specific event by ID"""
-        return self.db.query(Event).filter(Event.id == event_id).first()
+        return self.db.query(Event).filter(Event.event_id == event_id).first()
 
     def get_event_by_name(self, event_name: str) -> Optional[Event]:
         """Get a specific event by name"""
@@ -105,4 +105,26 @@ class EventController:
 
     def __del__(self):
         """Close database session when controller is destroyed"""
-        self.db.close() 
+        self.db.close()
+
+    def get_user_by_name(self, username: str) -> Optional[User]:
+        """Get a user by username"""
+        return self.db.query(User).filter(User.username == username).first()
+
+    def assign_support_to_event(self, event_name: str, support_name: str) -> Optional[Event]:
+        """Assign a support to an event"""
+        event = self.get_event_by_name(event_name)
+        if not event:
+            raise ValueError("Event not found")
+
+        support = self.get_user_by_name(support_name)
+        if not support:
+            raise ValueError("Support user not found")
+        
+        if support.role.role != "support":
+            raise ValueError("User must be a support")
+
+        event.support_id = support.id
+        self.db.commit()
+        self.db.refresh(event)
+        return event 

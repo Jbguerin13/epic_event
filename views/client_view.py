@@ -8,6 +8,7 @@ class ClientView:
     def __init__(self, current_user: User, db):
         self.controller = ClientController(current_user, db)
         self.current_user = current_user
+        self.db = db
 
     def clear_screen(self):
         """Clear the terminal screen"""

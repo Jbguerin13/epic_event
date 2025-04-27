@@ -193,6 +193,11 @@ class EventView:
             if not event:
                 raise ValueError("Événement non trouvé")
             
+            # Vérification pour les supports
+            if self.current_user.role.role == "support":
+                if event.support_id != self.current_user.id:
+                    raise PermissionError("Vous n'êtes pas assigné à cet événement. Vous ne pouvez pas le modifier.")
+            
             print("\nLaissez vide les champs que vous ne souhaitez pas modifier")
             new_event_name = input("Nouveau nom (ou vide): ")
             
@@ -278,6 +283,12 @@ class EventView:
         """Assign a support to an event"""
         try:
             print("\n=== Assigner un support à un événement ===")
-            print("Cette fonctionnalité n'est pas disponible pour le moment.")
+            event_name = input("Nom de l'événement: ")
+            support_name = input("Nom du support à assigner: ")
+            
+            event = self.controller.assign_support_to_event(event_name, support_name)
+            print(f"\nSupport assigné avec succès à l'événement {event.event_name}")
+        except ValueError as e:
+            print(f"\nErreur de validation: {str(e)}")
         except Exception as e:
             print(f"\nUne erreur est survenue: {str(e)}") 
