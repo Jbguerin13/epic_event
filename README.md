@@ -36,6 +36,25 @@ Cette architecture permet :
 - Une facilité de test
 - Une évolutivité du système
 
+## Journalisation avec Sentry
+
+Le projet utilise Sentry pour la journalisation des erreurs et exceptions. La configuration est gérée via le fichier `.env` :
+
+```
+SENTRY_DSN=votre_dsn_sentry
+```
+
+### Ce qui est journalisé
+- Toutes les exceptions inattendues
+- Les erreurs critiques
+- Les problèmes de performance
+
+### Configuration
+1. Créez un compte Sentry
+2. Créez un nouveau projet
+3. Copiez le DSN fourni par Sentry
+4. Ajoutez-le dans votre fichier `.env`
+
 ## Installation et exécution
 
 Suivez les étapes ci-dessous pour installer et exécuter le projet Epic Events localement.

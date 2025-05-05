@@ -104,11 +104,3 @@ ROLES = {
     "sailor": "sailor can create client and update only their own clients, filter display contracts wich are signed or not, create events only for their clients when contract is signed",
     "support": "support can filter and update events",
 }
-
-#classe permission, centraliser la verrif des permissions
-#init avec les roles
-#methodes pour verifier les permissions des utilisateurs
-#faire un décorateur pour les vérifications de permissions à utiliser ensuite dans les controllers
-
-
-#C'est les permissions et l'auth qui vont être check en premier dans l'examen

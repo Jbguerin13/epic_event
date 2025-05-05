@@ -1,6 +1,7 @@
 from models.sql_models import User, UserRoles
 from typing import Optional
 import re
+import sentry_sdk
 
 class UserController:
     def __init__(self, db):
@@ -44,13 +45,13 @@ class UserController:
         print("Tentative de commit...")
         try:
             self.db.commit()
-            print("Commit réussi")
+            sentry_sdk.capture_message(f"Utilisateur {username} avec le role {role_name} créé avec succès")
         except Exception as e:
             print(f"Erreur lors du commit: {str(e)}")
+            sentry_sdk.capture_message(f"Erreur lors du commit: {str(e)}")
             self.db.rollback()
             raise
         
-        print("Rafraîchissement de l'utilisateur...")
         self.db.refresh(user)
         print(f"Utilisateur créé avec succès (ID: {user.id})")
         return user 
